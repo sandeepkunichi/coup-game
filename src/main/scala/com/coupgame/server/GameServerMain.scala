@@ -127,7 +127,7 @@ class GameServer(gameServerSocketProd: GameServerSocket)
 object GameServerMain {
 
   val gameServerSocket: GameServerSocket = sys.env.get("PORT") match {
-    case Some(port) => GameServerSocket("wss", "coup-fe.herokuapp.com", port)
+    case Some(_) => GameServerSocket("wss", "coup-fe.herokuapp.com", "")
     case _ => GameServerSocket("ws", "localhost", "8080")
   }
 
