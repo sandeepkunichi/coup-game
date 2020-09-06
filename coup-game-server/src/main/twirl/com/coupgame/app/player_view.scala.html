@@ -1,0 +1,57 @@
+@import com.coupgame.server.data.models.ActionInterface
+@(player: com.coupgame.server.data.models.Player, world: Set[com.coupgame.server.data.models.Player])
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+<div class="container">
+    <br/>
+    <h1>Your Hand</h1>
+    <div class="row">
+        @if(player.hand.isDefined) {
+            <div class="col-md-auto">
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">@(player.hand.get.cards._1.getClass.getSimpleName)</h5>
+                        <p class="card-text">@(player.hand.get.cards._1.description)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-auto">
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">@(player.hand.get.cards._2.getClass.getSimpleName)</h5>
+                        <p class="card-text">@(player.hand.get.cards._2.description)</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <br/>
+    <h1>Other Players' Hand</h1>
+    <div class="row">
+        @for(otherPlayer <- world.filterNot(p => p.playerId.equals(player.playerId))) {
+            <div class="col-md-auto">
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">@(otherPlayer.playerId.toString)</h5>
+                        <p class="card-text">@(otherPlayer.getHand)</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <br/>
+    <h1>Actions</h1>
+    <div class="row">
+        @for(action <- ActionInterface().actionIdMap) {
+            <div class="col-md-auto">
+                <div class="card" style="width: 10rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">@action._2.getClass.getSimpleName.replace("$", "")</h5>
+                        <p class="card-text">@action._2.log</p>
+                        <a href="#" class="btn btn-primary">Execute</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

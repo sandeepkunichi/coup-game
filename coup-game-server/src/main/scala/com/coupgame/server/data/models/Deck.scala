@@ -16,20 +16,21 @@ case class CardInterface() {
 
 sealed trait Card {
   val shown: Boolean = false
+  val description: String
   def withShown: Card = this match {
-    case _: Captain => Captain(true)
-    case _: Ambassador => Ambassador(true)
-    case _: Duke => Duke(true)
-    case _: Assassin => Assassin(true)
-    case _: Contessa => Contessa(true)
+    case _: Captain => Captain(shown = true)
+    case _: Ambassador => Ambassador(shown = true)
+    case _: Duke => Duke(shown = true)
+    case _: Assassin => Assassin(shown = true)
+    case _: Contessa => Contessa(shown = true)
   }
 }
 
-case class Captain(override val shown: Boolean = false) extends Card
-case class Ambassador(override val shown: Boolean = false) extends Card
-case class Duke(override val shown: Boolean = false) extends Card
-case class Assassin(override val shown: Boolean = false) extends Card
-case class Contessa(override val shown: Boolean = false) extends Card
+case class Captain(override val shown: Boolean = false, override val description: String = "Take 2 coins from another player. Blocks stealing.") extends Card
+case class Ambassador(override val shown: Boolean = false, override val description: String = "Exchange cards with Court Deck. Blocks stealing.") extends Card
+case class Duke(override val shown: Boolean = false, override val description: String = "Take 3 coins. Blocks Foreign Aid") extends Card
+case class Assassin(override val shown: Boolean = false, override val description: String = "Pay 3 coins and assassinate a player.") extends Card
+case class Contessa(override val shown: Boolean = false, override val description: String = "Blocks assassination.") extends Card
 
 case class Hand(cards: (Card, Card))
 

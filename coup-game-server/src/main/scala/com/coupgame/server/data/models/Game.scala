@@ -7,9 +7,9 @@ case object Game {
 case class Player(playerId: Long, hand: Option[Hand] = None, coins: Int) {
   def getHand: String = {
     hand match {
-      case Some(h) if h.cards._1.shown & !h.cards._2.shown => h.cards._1 + ",****"
-      case Some(h) if h.cards._2.shown & !h.cards._1.shown => h.cards._2 + ",****"
-      case Some(h) if h.cards._2.shown & h.cards._1.shown => h.cards._1 + "," + h.cards._2
+      case Some(h) if h.cards._1.shown & !h.cards._2.shown => h.cards._1.getClass.getSimpleName + ",****"
+      case Some(h) if h.cards._2.shown & !h.cards._1.shown => h.cards._2.getClass.getSimpleName + ",****"
+      case Some(h) if h.cards._2.shown & h.cards._1.shown => h.cards._1.getClass.getSimpleName + "," + h.cards._2.getClass.getSimpleName
       case Some(_) => "****,****"
       case _ => ""
     }

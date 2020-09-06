@@ -7,6 +7,7 @@ version := "0.1"
 scalaVersion := "2.12.4"
 
 mainClass in Compile := Some("com.coupgame.server.GameServerMain")
+enablePlugins(SbtTwirl)
 enablePlugins(JavaAppPackaging)
 
 resolvers += Resolver.jcenterRepo

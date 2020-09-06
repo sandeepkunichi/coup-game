@@ -7,6 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 trait PlayerStore {
+  def getPlayer(playerId: Long): Future[Player]
   def createPlayers(numPlayers: Int): Future[Unit]
   def dealToPlayers(): Future[Unit]
   def getWorld: Future[Set[Player]]
@@ -17,6 +18,10 @@ trait PlayerStore {
 class LocalPlayerStore(implicit executionContext: ExecutionContext) extends PlayerStore {
 
   private var players: mutable.Map[Long, Player] = mutable.Map.empty
+
+  override def getPlayer(playerId: Long): Future[Player] = Future {
+    players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
+  }
 
   override def createPlayers(numPlayers: Int): Future[Unit] = {
     val playerIds: Set[Long] = Game.createGame(numPlayers)
