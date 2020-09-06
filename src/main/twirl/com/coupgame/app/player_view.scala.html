@@ -1,5 +1,6 @@
 @import com.coupgame.server.data.models.ActionInterface
-@(player: com.coupgame.server.data.models.Player, world: Set[com.coupgame.server.data.models.Player])
+@import com.coupgame.server.GameServerSocket
+@(player: com.coupgame.server.data.models.Player, world: Set[com.coupgame.server.data.models.Player], socket: GameServerSocket)
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
 <div class="container">
@@ -55,3 +56,36 @@
         }
     </div>
 </div>
+<script>
+        /**
+         * Open a new WebSocket connection using the given parameters
+         */
+        function openWSConnection(protocol, hostname, port, endpoint, gameId) {
+            var webSocketURL = protocol + "://" + hostname + ":" + port + endpoint + "?gameId=" + gameId;
+            console.log("openWSConnection::Connecting to: " + webSocketURL);
+            var webSocket;
+            try {
+                webSocket = new WebSocket(webSocketURL);
+                webSocket.onopen = function (openEvent) {
+                    alert("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
+                };
+                webSocket.onclose = function (closeEvent) {
+                    console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
+                };
+                webSocket.onerror = function (errorEvent) {
+                    console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
+                };
+                webSocket.onmessage = function (messageEvent) {
+                    var wsMsg = messageEvent.data;
+                    alert("WebSocket MESSAGE: " + wsMsg);
+                };
+            } catch (exception) {
+                console.error(exception);
+            }
+        }
+        var protocol = "@socket.protocol";
+        var host = "@socket.host";
+        var port = "@socket.port";
+
+        openWSConnection(protocol, host, port, "/game-room", "1")
+</script>

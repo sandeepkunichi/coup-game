@@ -12,10 +12,13 @@ import com.coupgame.server.data.json.JsonSupport._
 import com.coupgame.server.data.json._
 import com.coupgame.server.data.models.ActionInterface
 import com.coupgame.server.data.store.LocalPlayerStore
+import com.coupgame.server.room.GameRoomStore
 import play.twirl.api.Html
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+case class GameServerSocket(protocol: String, host: String, port: String)
 
 trait CoupGameService {
 
@@ -26,12 +29,17 @@ trait CoupGameService {
     Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`)(_.toString)
 
   private val playerStore = new LocalPlayerStore()
+  private val gameRoomStore = new GameRoomStore()
+
+  protected val gameServerSocket: GameServerSocket
 
 
   val startGame: Route = path("start") {
-    post { entity(as[StartGameCommand]) { sgc =>
+    post {
+      entity(as[StartGameCommand]) { sgc =>
         playerStore.createPlayers(sgc.numPlayers)
-        complete(StartGameResponse.apply())
+        val gameId = gameRoomStore.createGameRoom()
+        complete(StartGameResponse.apply(gameId))
       }
     }
   }
@@ -80,23 +88,48 @@ trait CoupGameService {
           for {
             player <- playerStore.getPlayer(playerId)
             world <- playerStore.getWorld
-          } yield com.coupgame.app.html.player_view.render(player, world)
+          } yield com.coupgame.app.html.player_view.render(player, world, gameServerSocket)
         }
+      }
+    }
+  }
+
+  val gameRoom: Route = path("game-room") {
+    get {
+      parameter('gameId.as[Long]) { gameId =>
+        handleWebSocketMessages(gameRoomStore.listen(gameId))
+      }
+    }
+  }
+
+  val postAction: Route = path("post-action") {
+    post { entity(as[ActionCommand]) { ac: ActionCommand =>
+      parameter('gameId.as[Long]) { gameId =>
+        gameRoomStore.sendForReview(ac, gameId)
+        complete("Sent to players")
+      }
       }
     }
   }
 
 }
 
-class GameServer(implicit val actorSystem: ActorSystem, implicit val materializer: ActorMaterializer)
-  extends CoupGameService {
+class GameServer(gameServerSocketProd: GameServerSocket)
+                (implicit val actorSystem: ActorSystem, implicit val materializer: ActorMaterializer) extends CoupGameService {
+
+  override protected val gameServerSocket: GameServerSocket = gameServerSocketProd
 
   def startServer(address: String, port: Int): Future[Http.ServerBinding] = {
-    Http().bindAndHandle(startGame ~ deal ~ action ~ counterAction ~ world ~ loseInfluence ~ playerView, address, port)
+    Http().bindAndHandle(startGame ~ deal ~ action ~ counterAction ~ world ~ loseInfluence ~ playerView ~ gameRoom ~ postAction, address, port)
   }
 }
 
 object GameServerMain {
+
+  val gameServerSocket: GameServerSocket = sys.env.get("PORT") match {
+    case Some(port) => GameServerSocket("wss", "coup-fe.herokuapp.com", port)
+    case _ => GameServerSocket("ws", "localhost", "8080")
+  }
 
   def main(args: Array[String]) {
 
@@ -105,7 +138,7 @@ object GameServerMain {
     implicit val actorSystem: ActorSystem = ActorSystem("coup-game-server")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-    val server = new GameServer
+    val server = new GameServer(gameServerSocket)
     server.startServer("0.0.0.0", port)
   }
 

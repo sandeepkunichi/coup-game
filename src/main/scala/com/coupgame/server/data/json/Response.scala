@@ -7,7 +7,7 @@ import spray.json._
 case class Response(data: JsValue)
 
 case object StartGameResponse {
-  def apply(): Response = Response("""{"message": "Game created"}""".parseJson)
+  def apply(gameId: Long): Response = Response(s"""{"message": "Game created", "gameId": $gameId}""".parseJson)
 }
 case object DealResponse {
   def apply(): Response = Response("""{"message": "Dealing complete"}""".parseJson)
