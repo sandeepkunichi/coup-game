@@ -67,7 +67,7 @@
             try {
                 webSocket = new WebSocket(webSocketURL);
                 webSocket.onopen = function (openEvent) {
-                    alert("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
+                    console.log("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
                 };
                 webSocket.onclose = function (closeEvent) {
                     console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
@@ -77,7 +77,7 @@
                 };
                 webSocket.onmessage = function (messageEvent) {
                     var wsMsg = messageEvent.data;
-                    alert("WebSocket MESSAGE: " + wsMsg);
+                    console.log("WebSocket MESSAGE: " + wsMsg);
                 };
             } catch (exception) {
                 console.error(exception);
