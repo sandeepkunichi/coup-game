@@ -31,7 +31,7 @@ class GameRoomStore() {
   }
 
   def sendForReview(action: ActionCommand, gameId: Long): Unit = {
-    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(action.log))
+    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(action.toJson))
   }
 
   def createGameRoom(): Long = {

@@ -77,7 +77,7 @@
                 };
                 webSocket.onmessage = function (messageEvent) {
                     var wsMsg = messageEvent.data;
-                    console.log("WebSocket MESSAGE: " + wsMsg);
+                    console.log(JSON.parse(wsMsg));
                 };
             } catch (exception) {
                 console.error(exception);

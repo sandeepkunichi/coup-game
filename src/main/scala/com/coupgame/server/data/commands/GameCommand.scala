@@ -2,6 +2,8 @@ package com.coupgame.server.data.commands
 
 import com.coupgame.server.data.models.ActionInterface
 
+import spray.json._
+
 sealed trait GameCommand
 
 case class StartGameCommand(numPlayers: Int) extends GameCommand
@@ -14,6 +16,9 @@ case class ActionCommand(initiator: Long, target: Option[Long], actionId: Int) e
         case None => ""
       }
     }
+  }
+  def toJson: String = {
+    s"""{"initiator": $initiator, ${target.map(t => s""""target": $t, """).getOrElse("")} "actionId": $actionId, "log": "$log"}""".parseJson.toString
   }
 }
 case class CounterActionCommand(initiator: Long, target: Long, counterActionId: Int) extends GameCommand {
