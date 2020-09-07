@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+<div class="container">
+    <br/>
+    <h1>Coup</h1>
+    <div class="row">
+        <div class="col-md-auto">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">New Game</h5>
+                    <div class="card-body">
+                        <select id="num-players" class="form-control" title="execute-action">
+                            <option id="2">2 Players</option>
+                        </select>
+                        <br/>
+                        <a class="btn text-white bg-success" onclick="createGame()">Create</a>
+                        <br/><br/>
+                        <div id="player-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script>
+
+    function createGame() {
+
+        var numPlayersElement = $("#num-players").find("option:selected");
+        var numPlayers = parseInt($.trim(numPlayersElement.attr("id")));
+        var settings = {
+            "url": "/start",
+            "method": "POST",
+            "timeout": 0,
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "data": JSON.stringify({"numPlayers":numPlayers})
+        };
+
+        $.ajax(settings).done(function (response) {
+            var playerList = response["data"]["players"];
+            playerList.forEach(function (value, index) {
+                var r = $('<a class="btn text-white bg-success" onclick="goToPlayerView(\'' + value + '\')">Choose Player</a><br/><br/>');
+                $("#player-list").append(r);
+            });
+            var settings = {
+                "url": "/deal",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "data": JSON.stringify({})
+            };
+
+            $.ajax(settings).done(function (response) {
+                console.log(response);
+            });
+        });
+
+    }
+
+    function goToPlayerView(playerHash) {
+        window.location.href = "/player?id=" + playerHash;
+    }
+
+</script>

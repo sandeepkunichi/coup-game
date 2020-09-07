@@ -37,9 +37,12 @@ trait CoupGameService {
   val startGame: Route = path("start") {
     post {
       entity(as[StartGameCommand]) { sgc =>
-        playerStore.createPlayers(sgc.numPlayers)
-        val gameId = gameRoomStore.createGameRoom()
-        complete(StartGameResponse.apply(gameId))
+        complete {
+          playerStore.createPlayers(sgc.numPlayers).map { players =>
+            val gameId = gameRoomStore.createGameRoom()
+            StartGameResponse.apply(gameId, players)
+          }
+        }
       }
     }
   }
@@ -83,14 +86,20 @@ trait CoupGameService {
 
   val playerView: Route = path("player") {
     get {
-      parameter('id.as[Long]) { playerId =>
+      parameter('id.as[String]) { playerId =>
         complete {
           for {
-            player <- playerStore.getPlayer(playerId)
+            player <- playerStore.getPlayerByHash(playerId)
             world <- playerStore.getWorld
           } yield com.coupgame.app.html.player_view.render(player, world, gameServerSocket)
         }
       }
+    }
+  }
+
+  val index: Route = path("game") {
+    get {
+      complete(com.coupgame.app.html.index.render())
     }
   }
 
@@ -142,7 +151,7 @@ class GameServer(gameServerSocketProd: GameServerSocket)
   override protected val gameServerSocket: GameServerSocket = gameServerSocketProd
 
   def startServer(address: String, port: Int): Future[Http.ServerBinding] = {
-    Http().bindAndHandle(startGame ~ deal ~ action ~ counterAction ~ world ~ loseInfluence ~ playerView ~ gameRoom ~ postAction ~ feedback, address, port)
+    Http().bindAndHandle(startGame ~ deal ~ world ~ playerView ~ gameRoom ~ postAction ~ feedback ~ index, address, port)
   }
 }
 

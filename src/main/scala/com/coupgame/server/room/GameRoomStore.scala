@@ -124,9 +124,9 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         Future {
           val actionCommand = feedbackCommand.actionCommand
           val counterAction = ActionInterface().getCounterForAction(actionCommand.actionId)
-          val counterActionLog = s"""${actionCommand.target.getOrElse("")} executed ${counterAction.log}"""
-          val log: String = s"""{"initiator": ${actionCommand.target.get}, "target": ${actionCommand.initiator}, "actionId": ${actionCommand.actionId}, "log": "$counterActionLog"}""".parseJson.toString
-          sendForReview(ActionCommand(actionCommand.target.get, Some(actionCommand.initiator), actionCommand.actionId), 1, 1, Some(log), skip = true)
+          val counterActionLog = s"""${feedbackCommand.reviewerId} executed ${counterAction.log}"""
+          val log: String = s"""{"initiator": ${feedbackCommand.reviewerId}, "target": ${actionCommand.initiator}, "actionId": ${actionCommand.actionId}, "log": "$counterActionLog"}""".parseJson.toString
+          sendForReview(feedbackCommand.actionCommand, 1, 1, Some(log), skip = true)
           Seq.empty
         }
       case ChallengeBlock(_) =>
@@ -142,11 +142,15 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         }
 
         if (challengeSuccessful) {
-          playerStore.losePlayerInfluence(challengee).map { _ => Seq.empty }
+          playerStore.losePlayerInfluence(challengee).map { _ =>
+            actionsMap.remove(feedbackCommand.actionCommand)
+            val originalAction = ActionCommand(initiator = feedbackCommand.reviewerId, target = Some(feedbackCommand.actionCommand.initiator), actionId = feedbackCommand.actionCommand.actionId)
+            Seq(originalAction) ++ (if (originalAction.actionId == 2) Seq.empty else Seq(ActionCommand(challenger, None, 6)))
+          }
         } else {
           playerStore.losePlayerInfluence(challenger).map { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
-            Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
+            Seq.empty
           }
         }
 

@@ -1,5 +1,7 @@
 package com.coupgame.server.data.store
 
+import java.util.UUID
+
 import com.coupgame.server.data.models._
 
 import scala.collection.mutable
@@ -8,7 +10,8 @@ import scala.util.Random
 
 trait PlayerStore {
   def getPlayer(playerId: Long): Future[Player]
-  def createPlayers(numPlayers: Int): Future[Unit]
+  def getPlayerByHash(playerHash: String): Future[Player]
+  def createPlayers(numPlayers: Int): Future[Set[Player]]
   def dealToPlayers(): Future[Unit]
   def getWorld: Future[Set[Player]]
   def losePlayerInfluence(playerId: Long): Future[Player]
@@ -23,20 +26,25 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
     players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
   }
 
-  override def createPlayers(numPlayers: Int): Future[Unit] = {
+  override def getPlayerByHash(playerHash: String): Future[Player] = Future {
+    players.values.find(p => p.playerHash.equals(UUID.fromString(playerHash))).getOrElse(throw new RuntimeException(s"$playerHash not found"))
+  }
+
+  override def createPlayers(numPlayers: Int): Future[Set[Player]] = {
     val playerIds: Set[Long] = Game.createGame(numPlayers)
     Future {
       players = mutable.Map.empty
       playerIds.foreach { playerId =>
-        players += playerId -> Player(playerId, coins = 2)
+        players += playerId -> Player(playerId, coins = 2, playerHash = UUID.randomUUID())
       }
+      players.values.toSet
     }
   }
 
   override def dealToPlayers(): Future[Unit] = {
     Future {
-      players.keys.foreach { playerId =>
-        players.update(playerId, Player(playerId = playerId, coins = 2, hand = Some(Deck.deal)))
+      players.values.foreach { player =>
+        players.update(player.playerId, Player(playerId = player.playerId, coins = 2, hand = Some(Deck.deal), playerHash = player.playerHash))
       }
     }
   }
@@ -60,7 +68,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
           case Some(cards: (Card, Card)) if cards._2.equals(lostCard.get) => Some(Hand((cards._1, cards._2.withShown)))
           case _ => player.hand
         }
-        players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand))
+        players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand, playerHash = player.playerHash))
       }
 
 

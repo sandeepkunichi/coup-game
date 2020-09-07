@@ -1,10 +1,12 @@
 package com.coupgame.server.data.models
 
+import java.util.UUID
+
 case object Game {
   def createGame(numPlayers: Int): Set[Long] = (1L to numPlayers.toLong).toSet[Long]
 }
 
-case class Player(playerId: Long, hand: Option[Hand] = None, coins: Int) {
+case class Player(playerId: Long, hand: Option[Hand] = None, coins: Int, playerHash: UUID) {
   def getHand: String = {
     hand match {
       case Some(h) if h.cards._1.shown & !h.cards._2.shown => h.cards._1.getClass.getSimpleName + ",****"

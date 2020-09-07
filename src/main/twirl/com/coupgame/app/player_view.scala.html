@@ -5,7 +5,7 @@
 
 <div class="container">
     <br/>
-    <h1>Your Hand</h1>
+    <h1>Your Hand (Player @player.playerId)</h1>
     <div class="row">
         @if(player.hand.isDefined) {
             <div class="col-md-auto">
@@ -108,10 +108,23 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Modal title</h5>
+                <h5 class="modal-title"><p id="action-log"></p></h5>
             </div>
             <div class="modal-body">
-                <p id="action-log"></p>
+                <div class="card">
+                    <h5>Your Hand</h5>
+                    @if(!player.hand.get.cards._1.shown) {
+                        <a class="btn text-white bg-success">@(player.hand.get.cards._1.getClass.getSimpleName) (Active)</a>
+                    } else {
+                        <a class="btn text-white bg-danger">@(player.hand.get.cards._1.getClass.getSimpleName) (Inactive)</a>
+                    }
+                    @if(!player.hand.get.cards._2.shown) {
+                        <a class="btn text-white bg-success">@(player.hand.get.cards._2.getClass.getSimpleName) (Active)</a>
+                    } else {
+                        <a class="btn text-white bg-danger">@(player.hand.get.cards._2.getClass.getSimpleName) (Inactive)</a>
+                    }
+                    <img class="card-img-top" src="https://res.cloudinary.com/lmn/image/upload/e_sharpen:100/f_auto,fl_lossy,q_auto/v1/gameskinnyc/p/h/o/photo-coup-1024x658-7b519.png" alt="Card image cap">
+                </div>
             </div>
             <div class="modal-footer">
                 <div id="action-data"></div>
