@@ -5,17 +5,19 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
 import com.coupgame.server.data.commands.{ActionCommand, ActionFeedbackCommand}
-import com.coupgame.server.data.models.{ActionInterface, Card, Exchange, Hand}
+import com.coupgame.server.data.models.{ActionInterface, Card, CounterAction, Hand}
 import com.coupgame.server.data.store.PlayerStore
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import spray.json._
 
 sealed trait ActionReview
 case class Waiting() extends ActionReview
 case class Approve(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
 case class Block(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
 case class Challenge(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
+case class ChallengeBlock(actionCommand: ActionCommand) extends ActionReview
 
 case class ActionLog(actionCommand: ActionCommand, reviews: Seq[ActionReview] = Seq.empty)
 
@@ -44,9 +46,11 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
     }
   }
 
-  def sendForReview(action: ActionCommand, gameId: Long, numOpponents: Int): Unit = {
-    actionsMap += action -> ActionLog(action, reviews = (1 to numOpponents).map(_ => Waiting()))
-    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(action.toJson))
+  def sendForReview(action: ActionCommand, gameId: Long, numOpponents: Int, alternateLog: Option[String] = None, skip: Boolean = false): Unit = {
+    if (!skip) {
+      actionsMap += action -> ActionLog(action, reviews = (1 to numOpponents).map(_ => Waiting()))
+    }
+    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(alternateLog.getOrElse(action.toJson)))
   }
 
   def createGameRoom(): Long = {
@@ -74,6 +78,7 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
       case 1 => Approve(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
       case 2 => Block(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
       case 3 => Challenge(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
+      case 4 => ChallengeBlock(feedbackCommand.actionCommand)
     }
 
     actionReview match {
@@ -114,6 +119,37 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         approvedActions.map(actionsMap.remove(_))
 
         Future { approvedActions.toSeq }
+
+      case Block(_, _) =>
+        Future {
+          val actionCommand = feedbackCommand.actionCommand
+          val counterAction = ActionInterface().getCounterForAction(actionCommand.actionId)
+          val counterActionLog = s"""${actionCommand.target.getOrElse("")} executed ${counterAction.log}"""
+          val log: String = s"""{"initiator": ${actionCommand.target.get}, "target": ${actionCommand.initiator}, "actionId": ${actionCommand.actionId}, "log": "$counterActionLog"}""".parseJson.toString
+          sendForReview(ActionCommand(actionCommand.target.get, Some(actionCommand.initiator), actionCommand.actionId), 1, 1, Some(log), skip = true)
+          Seq.empty
+        }
+      case ChallengeBlock(_) =>
+        val counterAction: CounterAction = ActionInterface().getCounterForAction(feedbackCommand.actionCommand.actionId)
+        val counterActionId: Int = ActionInterface().counterActionMap.filter(_._2.equals(counterAction)).keySet.head
+        val counterActionCard: Card = ActionInterface().getValidCardForCounter(counterActionId)
+        val challenger: Long =  feedbackCommand.reviewerId
+        val challengee = feedbackCommand.actionCommand.initiator
+
+        val challengeSuccessful: Boolean = initiatorHand match {
+          case Some(iHand) =>
+            !Seq(iHand.cards._1, iHand.cards._2).filterNot(_.shown).exists(_.equals(counterActionCard))
+        }
+
+        if (challengeSuccessful) {
+          playerStore.losePlayerInfluence(challengee).map { _ => Seq.empty }
+        } else {
+          playerStore.losePlayerInfluence(challenger).map { _ =>
+            actionsMap.remove(feedbackCommand.actionCommand)
+            Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
+          }
+        }
+
     }
   }
 

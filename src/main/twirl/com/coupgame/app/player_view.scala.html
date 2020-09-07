@@ -116,6 +116,7 @@
             <div class="modal-footer">
                 <div id="action-data"></div>
                 <button id="challenge-action" type="button" class="btn btn-primary" data-dismiss="modal" onclick="feedback(3)">Challenge</button>
+                <button id="challenge-block" type="button" class="btn btn-primary" data-dismiss="modal" onclick="feedback(4)">Challenge Block</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="feedback(1)">Accept</button>
                 <button id="block-action" type="button" class="btn btn-secondary" data-dismiss="modal" style="display: none" onclick="feedback(2)">Block</button>
             </div>
@@ -224,17 +225,26 @@
                     var initiator = wsMsg["initiator"];
                     var target = wsMsg["target"];
                     var actionId = wsMsg["actionId"];
+                    var log = wsMsg["log"];
                     if (initiator !== playerId) {
                         var modal = $('#action-modal');
-                        if (target === playerId && blockableActions.indexOf(actionId) >= 0) {
+                        var isBlockAction = log.indexOf("Block") >= 0;
+                        var isBlockableAction = blockableActions.indexOf(actionId) >= 0;
+                        console.log(actionId);
+                        if ((target === playerId || isBlockableAction) && !isBlockAction) {
                             $("#block-action").css("display", "block");
                         } else {
                             $("#block-action").css("display", "none");
                         }
-                        if(actionId === 1) {
+                        if(actionId === 1 || actionId === 2 || isBlockAction) {
                             $("#challenge-action").css("display", "none");
                         } else {
                             $("#challenge-action").css("display", "block");
+                        }
+                        if (isBlockAction) {
+                            $("#challenge-block").css("display", "block");
+                        } else {
+                            $("#challenge-block").css("display", "none");
                         }
                         $("#action-log").text(wsMsg["log"]);
                         $("#action-data").data(wsMsg);
