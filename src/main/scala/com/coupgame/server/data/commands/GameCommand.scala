@@ -26,4 +26,5 @@ case class CounterActionCommand(initiator: Long, target: Long, counterActionId: 
     s"Player $initiator executed counter-action ${ActionInterface().getCounterActionWithId(counterActionId).log} on player $target"
   }
 }
-case class LoseInfluenceCommand(playerId: Long, cardId: Int) extends GameCommand
+case class LoseInfluenceCommand(playerId: Long) extends GameCommand
+case class ActionFeedbackCommand(actionCommand: ActionCommand, feedbackActionId: Int, reviewerId: Long) extends GameCommand

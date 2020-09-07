@@ -29,7 +29,7 @@ trait CoupGameService {
     Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`)(_.toString)
 
   private val playerStore = new LocalPlayerStore()
-  private val gameRoomStore = new GameRoomStore()
+  private val gameRoomStore = new GameRoomStore(playerStore)
 
   protected val gameServerSocket: GameServerSocket
 
@@ -76,7 +76,7 @@ trait CoupGameService {
   val loseInfluence: Route = path("lose") {
     post {
       entity(as[LoseInfluenceCommand]) { lic =>
-        complete(playerStore.losePlayerInfluence(lic.playerId, lic.cardId).map(LoseInfluenceResponse.apply))
+        complete(playerStore.losePlayerInfluence(lic.playerId).map(LoseInfluenceResponse.apply))
       }
     }
   }
@@ -105,9 +105,31 @@ trait CoupGameService {
   val postAction: Route = path("post-action") {
     post { entity(as[ActionCommand]) { ac: ActionCommand =>
       parameter('gameId.as[Long]) { gameId =>
-        gameRoomStore.sendForReview(ac, gameId)
+        playerStore.getWorld.map { world =>
+          gameRoomStore.sendForReview(ac, gameId, world.size - 1)
+        }
         complete("Sent to players")
       }
+      }
+    }
+  }
+
+  val feedback: Route = path("feedback") {
+    post {
+      entity(as[ActionFeedbackCommand]) { afc =>
+        (for {
+          reviewerHand <- playerStore.getPlayer(afc.reviewerId).map(_.hand)
+          initiatorHand <- playerStore.getPlayer(afc.actionCommand.initiator).map(_.hand)
+        } yield gameRoomStore.reviewFeedback(afc, reviewerHand, initiatorHand)).flatMap { approvedActionsFuture =>
+          approvedActionsFuture.flatMap { approvedActions =>
+            Future.sequence {
+              approvedActions.map { ac =>
+                playerStore.executeAction(ActionInterface().getActionWithId(ac.actionId), ac.initiator, ac.target)
+              }
+            }
+          }
+        }
+        complete("Feedback collected")
       }
     }
   }
@@ -120,7 +142,7 @@ class GameServer(gameServerSocketProd: GameServerSocket)
   override protected val gameServerSocket: GameServerSocket = gameServerSocketProd
 
   def startServer(address: String, port: Int): Future[Http.ServerBinding] = {
-    Http().bindAndHandle(startGame ~ deal ~ action ~ counterAction ~ world ~ loseInfluence ~ playerView ~ gameRoom ~ postAction, address, port)
+    Http().bindAndHandle(startGame ~ deal ~ action ~ counterAction ~ world ~ loseInfluence ~ playerView ~ gameRoom ~ postAction ~ feedback, address, port)
   }
 }
 

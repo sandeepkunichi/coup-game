@@ -11,7 +11,7 @@ trait PlayerStore {
   def createPlayers(numPlayers: Int): Future[Unit]
   def dealToPlayers(): Future[Unit]
   def getWorld: Future[Set[Player]]
-  def losePlayerInfluence(playerId: Long, cardId: Int): Future[Player]
+  def losePlayerInfluence(playerId: Long): Future[Player]
   def executeAction(action: Action, initiator: Long, target: Option[Long]): Future[Unit]
 }
 
@@ -26,6 +26,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
   override def createPlayers(numPlayers: Int): Future[Unit] = {
     val playerIds: Set[Long] = Game.createGame(numPlayers)
     Future {
+      players = mutable.Map.empty
       playerIds.foreach { playerId =>
         players += playerId -> Player(playerId, coins = 2)
       }
@@ -47,16 +48,21 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
     }
   }
 
-  override def losePlayerInfluence(playerId: Long, cardId: Int): Future[Player] = {
+  override def losePlayerInfluence(playerId: Long): Future[Player] = {
     Future {
       val player = players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
-      val lostCard: Card = CardInterface().getCardWithId(cardId)
-      val newHand: Option[Hand] = player.hand.map(_.cards) match {
-        case Some(cards: (Card, Card)) if cards._1.equals(lostCard) => Some(Hand((cards._2, cards._1.withShown)))
-        case Some(cards: (Card, Card)) if cards._2.equals(lostCard) => Some(Hand((cards._1, cards._2.withShown)))
-        case _ => player.hand
+      val hand: (Card, Card) = player.hand.getOrElse(throw new RuntimeException(s"Player hand is empty")).cards
+      val lostCard: Option[Card] = Random.shuffle(Seq(hand._1, hand._2).filterNot(_.shown)).headOption
+
+      if (lostCard.isDefined) {
+        val newHand: Option[Hand] = player.hand.map(_.cards) match {
+          case Some(cards: (Card, Card)) if cards._1.equals(lostCard.get) => Some(Hand((cards._2, cards._1.withShown)))
+          case Some(cards: (Card, Card)) if cards._2.equals(lostCard.get) => Some(Hand((cards._1, cards._2.withShown)))
+          case _ => player.hand
+        }
+        players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand))
       }
-      players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand))
+
 
       players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
     }

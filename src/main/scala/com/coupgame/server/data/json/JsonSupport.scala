@@ -9,7 +9,8 @@ object JsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val dealCommand: RootJsonFormat[DealCommand] = jsonFormat0(DealCommand)
   implicit val actionCommand: RootJsonFormat[ActionCommand] = jsonFormat3(ActionCommand)
   implicit val counterActionCommand: RootJsonFormat[CounterActionCommand] = jsonFormat3(CounterActionCommand)
-  implicit val losInfluenceCommand: RootJsonFormat[LoseInfluenceCommand] = jsonFormat2(LoseInfluenceCommand)
+  implicit val losInfluenceCommand: RootJsonFormat[LoseInfluenceCommand] = jsonFormat1(LoseInfluenceCommand)
+  implicit val actionFeedbackCommand: RootJsonFormat[ActionFeedbackCommand] = jsonFormat3(ActionFeedbackCommand)
 
   implicit val response: RootJsonFormat[Response] = jsonFormat1(Response)
 }

@@ -13,6 +13,11 @@
                     <div class="card-body">
                         <h5 class="card-title">@(player.hand.get.cards._1.getClass.getSimpleName)</h5>
                         <p class="card-text">@(player.hand.get.cards._1.description)</p>
+                        @(if(!player.hand.get.cards._1.shown) {
+                                <a class="btn text-white bg-success">Influence Active</a>
+                        } else {
+                                <a class="btn text-white bg-danger">Influence Lost</a>
+                        })
                     </div>
                 </div>
             </div>
@@ -21,10 +26,23 @@
                     <div class="card-body">
                         <h5 class="card-title">@(player.hand.get.cards._2.getClass.getSimpleName)</h5>
                         <p class="card-text">@(player.hand.get.cards._2.description)</p>
+                        @(if(!player.hand.get.cards._2.shown) {
+                                <a class="btn text-white bg-success">Influence Active</a>
+                        } else {
+                                <a class="btn text-white bg-danger">Influence Lost</a>
+                        })
                     </div>
                 </div>
             </div>
         }
+        <div class="col-md-auto">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Coins</h5>
+                    <p class="card-text">@(player.coins)</p>
+                </div>
+            </div>
+        </div>
     </div>
     <br/>
     <h1>Other Players' Hand</h1>
@@ -43,20 +61,145 @@
     <br/>
     <h1>Actions</h1>
     <div class="row">
-        @for(action <- ActionInterface().actionIdMap) {
-            <div class="col-md-auto">
-                <div class="card" style="width: 10rem;">
-                    <div class="card-body">
-                        <h5 class="card-title">@action._2.getClass.getSimpleName.replace("$", "")</h5>
-                        <p class="card-text">@action._2.log</p>
-                        <a href="#" class="btn btn-primary">Execute</a>
+        <div class="col-md-auto">
+            <table class="table table-sm table-dark">
+                <thead>
+                    <tr>
+                        <th scope="col">Action</th>
+                        <th scope="col">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for(action <- ActionInterface().actionIdMap) {
+                    <tr>
+                        <td>@action._2.getClass.getSimpleName.replace("$", "")</td>
+                        <td>@action._2.log</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-auto">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Execute Action</h5>
+                    <select id="execute-action" class="form-control" title="execute-action" onchange="showPlayers()">
+                    @for(action <- ActionInterface().actionIdMap) {
+                        <option id="@action._1">@action._2.getClass.getSimpleName.replace("$", "")</option>
+                    }
+                    </select>
+                    <br/>
+                    <div id="target-select" style="display: none;">
+                        <h5 class="card-title">Select Target Player</h5>
+                        <select class="form-control" title="select-target">
+                        @for(playerId <- world.map(_.playerId).filterNot(_.equals(player.playerId))) {
+                            <option id="@playerId">@playerId</option>
+                        }
+                        </select>
                     </div>
+                    <br/>
+                    <button type="button" class="btn btn-primary" onclick="executeAction()">Execute</button>
                 </div>
             </div>
-        }
+        </div>
     </div>
 </div>
+<div id="action-modal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal title</h5>
+            </div>
+            <div class="modal-body">
+                <p id="action-log"></p>
+            </div>
+            <div class="modal-footer">
+                <div id="action-data"></div>
+                <button id="challenge-action" type="button" class="btn btn-primary" data-dismiss="modal" onclick="feedback(3)">Challenge</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="feedback(1)">Accept</button>
+                <button id="block-action" type="button" class="btn btn-secondary" data-dismiss="modal" style="display: none" onclick="feedback(2)">Block</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script>
+        var playerId = @player.playerId;
+
+        var specialActions = ["Assassinate", "Steal", "Coup"];
+        var blockableActions = [2, 5, 7];
+
+        function feedback(action) {
+            var actionData = $("#action-data").data();
+
+            var request = {
+                "actionCommand": actionData,
+                "feedbackActionId": action,
+                "reviewerId": playerId
+            };
+
+            console.log(request);
+
+            var settings = {
+                "url": "/feedback?gameId=1",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "data": JSON.stringify(request)
+            };
+
+            $.ajax(settings).done(function (response) {
+                console.log(response);
+            });
+        }
+
+        function executeAction() {
+            var action = $("#execute-action").find("option:selected");
+            var initiator = playerId;
+            var actionId = parseInt($.trim(action.attr("id")));
+            var target = null;
+            if (specialActions.indexOf($.trim(action.text())) >= 0) {
+                target = parseInt($.trim($("#target-select").find("option:selected").attr("id")));
+            }
+
+            var request = {
+                "initiator": initiator,
+                "actionId": actionId
+            };
+
+            if (target != null) {
+                request["target"] = target;
+            }
+
+            console.log(request);
+
+            var settings = {
+                "url": "/post-action?gameId=1",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "data": JSON.stringify(request)
+            };
+
+            $.ajax(settings).done(function (response) {
+                console.log(response);
+            });
+        }
+
+        function showPlayers() {
+            if(specialActions.indexOf($.trim($("#execute-action").find("option:selected").text())) >= 0) {
+                $("#target-select").css("display", "block");
+            } else {
+                $("#target-select").css("display", "none");
+            }
+        }
+
         /**
          * Open a new WebSocket connection using the given parameters
          */
@@ -71,13 +214,33 @@
                 };
                 webSocket.onclose = function (closeEvent) {
                     console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
+                    //setTimeout(openWSConnection(protocol, hostname, port, endpoint, gameId), 1000);
                 };
                 webSocket.onerror = function (errorEvent) {
                     console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
                 };
                 webSocket.onmessage = function (messageEvent) {
-                    var wsMsg = messageEvent.data;
-                    console.log(JSON.parse(wsMsg));
+                    var wsMsg = JSON.parse(messageEvent.data);
+                    var initiator = wsMsg["initiator"];
+                    var target = wsMsg["target"];
+                    var actionId = wsMsg["actionId"];
+                    if (initiator !== playerId) {
+                        var modal = $('#action-modal');
+                        if (target === playerId && blockableActions.indexOf(actionId) >= 0) {
+                            $("#block-action").css("display", "block");
+                        } else {
+                            $("#block-action").css("display", "none");
+                        }
+                        if(actionId === 1) {
+                            $("#challenge-action").css("display", "none");
+                        } else {
+                            $("#challenge-action").css("display", "block");
+                        }
+                        $("#action-log").text(wsMsg["log"]);
+                        $("#action-data").data(wsMsg);
+                        modal.modal({backdrop: 'static', keyboard: false});
+                        modal.modal('show');
+                    }
                 };
             } catch (exception) {
                 console.error(exception);

@@ -34,8 +34,16 @@ case class ActionInterface() {
     4 -> Challenge
   )
 
+  lazy val actionCardMap = Map (
+    Tax -> Duke(),
+    Assassinate -> Assassin(),
+    Exchange -> Ambassador(),
+    Steal -> Captain()
+  )
+
   def getActionWithId(actionId: Int): Action = actionIdMap.getOrElse(actionId, throw new RuntimeException(s"$actionId not found"))
   def getCounterActionWithId(counterActionId: Int): CounterAction = counterActionMap.getOrElse(counterActionId, throw new RuntimeException(s"$counterActionId not found"))
+  def getValidCard(actionId: Int): Card = actionCardMap.getOrElse(actionIdMap.getOrElse(actionId, throw new RuntimeException(s"$actionId not found")), throw new RuntimeException(s"Card not found for action $actionId"))
 }
 
 class Action(description: String) {
