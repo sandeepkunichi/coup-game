@@ -53,6 +53,10 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
     for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(alternateLog.getOrElse(action.toJson)))
   }
 
+  def reloadAll(gameId: Long): Unit = {
+    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict("RELOAD"))
+  }
+
   def createGameRoom(): Long = {
     browserConnections = Map.empty
     val gameId: Long = if(browserConnections.keySet.isEmpty) 1L else browserConnections.keySet.max
@@ -93,10 +97,14 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         }
 
         if (challengeSuccessful) {
-          playerStore.losePlayerInfluence(challengee).map { _ => Seq.empty }
+          playerStore.losePlayerInfluence(challengee).map { _ =>
+            reloadAll(1)
+            Seq.empty
+          }
         } else {
           playerStore.losePlayerInfluence(challenger).map { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
+            reloadAll(1)
             Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
           }
         }
@@ -118,7 +126,10 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
 
         approvedActions.map(actionsMap.remove(_))
 
-        Future { approvedActions.toSeq }
+        Future {
+          reloadAll(1)
+          approvedActions.toSeq
+        }
 
       case Block(_, _) =>
         Future {
@@ -132,24 +143,26 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
       case ChallengeBlock(_) =>
         val counterAction: CounterAction = ActionInterface().getCounterForAction(feedbackCommand.actionCommand.actionId)
         val counterActionId: Int = ActionInterface().counterActionMap.filter(_._2.equals(counterAction)).keySet.head
-        val counterActionCard: Card = ActionInterface().getValidCardForCounter(counterActionId)
+        val counterActionCards: Set[Card] = ActionInterface().getValidCardsForCounter(counterActionId)
         val challenger: Long =  feedbackCommand.reviewerId
         val challengee = feedbackCommand.actionCommand.initiator
 
         val challengeSuccessful: Boolean = initiatorHand match {
           case Some(iHand) =>
-            !Seq(iHand.cards._1, iHand.cards._2).filterNot(_.shown).exists(_.equals(counterActionCard))
+            !Seq(iHand.cards._1, iHand.cards._2).filterNot(_.shown).exists(c => counterActionCards.exists(_.equals(c)))
         }
 
         if (challengeSuccessful) {
           playerStore.losePlayerInfluence(challengee).map { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
             val originalAction = ActionCommand(initiator = feedbackCommand.reviewerId, target = Some(feedbackCommand.actionCommand.initiator), actionId = feedbackCommand.actionCommand.actionId)
+            reloadAll(1)
             Seq(originalAction) ++ (if (originalAction.actionId == 2) Seq.empty else Seq(ActionCommand(challenger, None, 6)))
           }
         } else {
           playerStore.losePlayerInfluence(challenger).map { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
+            reloadAll(1)
             Seq.empty
           }
         }

@@ -43,10 +43,10 @@ case class ActionInterface() {
     Steal -> Captain()
   )
 
-  lazy val counterActionCardMap = Map (
-    BlockAssassination -> Contessa(),
-    BlockStealing -> Captain(),
-    BlockForeignAid -> Duke(),
+  lazy val counterActionCardMap: Map[CounterAction, Set[Card]] = Map (
+    BlockAssassination -> Set(Contessa()),
+    BlockStealing -> Set(Captain(), Ambassador()),
+    BlockForeignAid -> Set(Duke())
   )
 
   lazy val actionCounterAction = Map (
@@ -58,7 +58,7 @@ case class ActionInterface() {
   def getActionWithId(actionId: Int): Action = actionIdMap.getOrElse(actionId, throw new RuntimeException(s"$actionId not found"))
   def getCounterActionWithId(counterActionId: Int): CounterAction = counterActionMap.getOrElse(counterActionId, throw new RuntimeException(s"$counterActionId not found"))
   def getValidCard(actionId: Int): Card = actionCardMap.getOrElse(actionIdMap.getOrElse(actionId, throw new RuntimeException(s"$actionId not found")), throw new RuntimeException(s"Card not found for action $actionId"))
-  def getValidCardForCounter(counterActionId: Int): Card = counterActionCardMap.getOrElse(counterActionMap.getOrElse(counterActionId, throw new Exception()), throw new Exception())
+  def getValidCardsForCounter(counterActionId: Int): Set[Card] = counterActionCardMap.getOrElse(counterActionMap.getOrElse(counterActionId, throw new Exception()), throw new Exception())
   def getCounterForAction(actionId: Int): CounterAction = actionCounterAction.getOrElse(actionId, throw new Exception())
 }
 

@@ -84,7 +84,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Execute Action</h5>
                     <select id="execute-action" class="form-control" title="execute-action" onchange="showPlayers()">
-                    @for(action <- ActionInterface().actionIdMap) {
+                    @for(action <- ActionInterface().actionIdMap.toSeq.sortBy(_._1)) {
                         <option id="@action._1">@action._2.getClass.getSimpleName.replace("$", "")</option>
                     }
                     </select>
@@ -234,6 +234,9 @@
                     console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
                 };
                 webSocket.onmessage = function (messageEvent) {
+                    if (messageEvent.data === "RELOAD") {
+                        location.reload();
+                    }
                     var wsMsg = JSON.parse(messageEvent.data);
                     var initiator = wsMsg["initiator"];
                     var target = wsMsg["target"];
