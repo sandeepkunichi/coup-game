@@ -9,13 +9,14 @@
                 <div class="card-body">
                     <h5 class="card-title">New Game</h5>
                     <div class="card-body">
-                        <select id="num-players" class="form-control" title="execute-action">
+                        <select id="num-players" class="form-control" title="execute-action" onchange="askEmails()">
+                            <option id="0">-</option>
                             <option id="2">2 Players</option>
                         </select>
                         <br/>
-                        <a class="btn text-white bg-success" onclick="createGame()">Create</a>
-                        <br/><br/>
                         <div id="player-list"></div>
+                        <br/>
+                        <a class="btn text-white bg-success" onclick="createGame()">Create</a>
                     </div>
                 </div>
             </div>
@@ -27,10 +28,24 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script>
 
-    function createGame() {
-
+    function askEmails() {
         var numPlayersElement = $("#num-players").find("option:selected");
         var numPlayers = parseInt($.trim(numPlayersElement.attr("id")));
+        $("#player-list").empty();
+        Array.from(Array(numPlayers).keys()).forEach(function (value) {
+            var r = $('<div class="form-group">\n' +
+                    '    <label for="exampleFormControlInput1">Email address</label>\n' +
+                    '    <input type="email" class="form-control" name="emails">\n' +
+                    '  </div>');
+            $("#player-list").append(r);
+        })
+    }
+
+    function createGame() {
+        var emails = $('input[name^=emails]').map(function(idx, elem) {
+            return $(elem).val();
+        }).get();
+
         var settings = {
             "url": "/start",
             "method": "POST",
@@ -38,15 +53,11 @@
             "headers": {
                 "Content-Type": "application/json"
             },
-            "data": JSON.stringify({"numPlayers":numPlayers})
+            "data": JSON.stringify({"emails":emails})
         };
 
         $.ajax(settings).done(function (response) {
-            var playerList = response["data"]["players"];
-            playerList.forEach(function (value, index) {
-                var r = $('<a class="btn text-white bg-success" onclick="goToPlayerView(\'' + value + '\')">Choose Player</a><br/><br/>');
-                $("#player-list").append(r);
-            });
+            console.log(response);
             var settings = {
                 "url": "/deal",
                 "method": "POST",
@@ -61,11 +72,6 @@
                 console.log(response);
             });
         });
-
-    }
-
-    function goToPlayerView(playerHash) {
-        window.location.href = "/player?id=" + playerHash;
     }
 
 </script>

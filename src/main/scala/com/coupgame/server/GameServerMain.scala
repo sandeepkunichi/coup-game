@@ -38,7 +38,7 @@ trait CoupGameService {
     post {
       entity(as[StartGameCommand]) { sgc =>
         complete {
-          playerStore.createPlayers(sgc.numPlayers).map { players =>
+          playerStore.createPlayers(sgc.emails).map { players =>
             val gameId = gameRoomStore.createGameRoom()
             StartGameResponse.apply(gameId, players)
           }

@@ -3,6 +3,7 @@ package com.coupgame.server.data.store
 import java.util.UUID
 
 import com.coupgame.server.data.models._
+import com.coupgame.server.invite.EmailInvite
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,7 +12,7 @@ import scala.util.Random
 trait PlayerStore {
   def getPlayer(playerId: Long): Future[Player]
   def getPlayerByHash(playerHash: String): Future[Player]
-  def createPlayers(numPlayers: Int): Future[Set[Player]]
+  def createPlayers(emails: Set[String]): Future[Set[Player]]
   def dealToPlayers(): Future[Unit]
   def getWorld: Future[Set[Player]]
   def losePlayerInfluence(playerId: Long): Future[Player]
@@ -30,12 +31,16 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
     players.values.find(p => p.playerHash.equals(UUID.fromString(playerHash))).getOrElse(throw new RuntimeException(s"$playerHash not found"))
   }
 
-  override def createPlayers(numPlayers: Int): Future[Set[Player]] = {
-    val playerIds: Set[Long] = Game.createGame(numPlayers)
+  override def createPlayers(emails: Set[String]): Future[Set[Player]] = {
+    val playerIds: Set[Long] = Game.createGame(emails.size)
     Future {
       players = mutable.Map.empty
-      playerIds.foreach { playerId =>
-        players += playerId -> Player(playerId, coins = 2, playerHash = UUID.randomUUID())
+      playerIds.zip(emails).foreach {
+        case (playerId: Long, email: String) =>
+          players += playerId -> Player(playerId, coins = 2, playerHash = UUID.randomUUID(), email = email)
+      }
+      players.values.foreach { player =>
+        EmailInvite.sendInvite(player.email, player.playerHash.toString)
       }
       players.values.toSet
     }
@@ -44,7 +49,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
   override def dealToPlayers(): Future[Unit] = {
     Future {
       players.values.foreach { player =>
-        players.update(player.playerId, Player(playerId = player.playerId, coins = 2, hand = Some(Deck.deal), playerHash = player.playerHash))
+        players.update(player.playerId, Player(playerId = player.playerId, coins = 2, hand = Some(Deck.deal), playerHash = player.playerHash, email = player.email))
       }
     }
   }
@@ -68,7 +73,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
           case Some(cards: (Card, Card)) if cards._2.equals(lostCard.get) => Some(Hand((cards._1, cards._2.withShown)))
           case _ => player.hand
         }
-        players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand, playerHash = player.playerHash))
+        players.update(playerId, Player(playerId = playerId, coins = player.coins, hand = newHand, playerHash = player.playerHash, email = player.email))
       }
 
 
@@ -90,6 +95,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
             case Some(targetPlayerFound) =>
               val newHand: Option[Hand] = targetPlayerFound.hand.map(h => (h.cards._1.withShown, h.cards._2.withShown)).map(Hand)
               players.update(targetPlayerFound.playerId, targetPlayerFound.copy(hand = newHand))
+            case _ =>
           }
         case Tax =>
           players.update(initiator, initiatorPlayer.copy(coins = initiatorPlayer.coins + 3))
@@ -107,6 +113,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
                 }
               }).map(Hand)
               players.update(targetPlayerFound.playerId, targetPlayerFound.copy(hand = newHand))
+            case _ =>
           }
         case Exchange =>
           val playerCards: (Card, Card) = initiatorPlayer.hand.getOrElse(throw new RuntimeException(s"Player $initiator has no cards to exchange")).cards
@@ -122,6 +129,7 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
               val targetPlayerCoins = targetPlayerFound.coins
               players.update(targetPlayerFound.playerId, targetPlayerFound.copy(coins = Math.max(0, targetPlayerFound.coins - 2)))
               players.update(initiator, initiatorPlayer.copy(coins = initiatorPlayer.coins + Math.min(2, targetPlayerCoins)))
+            case _ =>
           }
       }
     }

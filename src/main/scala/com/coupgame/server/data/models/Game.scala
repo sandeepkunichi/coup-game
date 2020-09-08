@@ -6,7 +6,7 @@ case object Game {
   def createGame(numPlayers: Int): Set[Long] = (1L to numPlayers.toLong).toSet[Long]
 }
 
-case class Player(playerId: Long, hand: Option[Hand] = None, coins: Int, playerHash: UUID) {
+case class Player(playerId: Long, hand: Option[Hand] = None, coins: Int, playerHash: UUID, email: String) {
   def getHand: String = {
     hand match {
       case Some(h) if h.cards._1.shown & !h.cards._2.shown => h.cards._1.getClass.getSimpleName + ",****"

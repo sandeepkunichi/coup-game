@@ -6,7 +6,7 @@ import spray.json._
 
 sealed trait GameCommand
 
-case class StartGameCommand(numPlayers: Int) extends GameCommand
+case class StartGameCommand(emails: Set[String]) extends GameCommand
 case class DealCommand() extends GameCommand
 case class ActionCommand(initiator: Long, target: Option[Long], actionId: Int) extends GameCommand {
   def log: String = {
