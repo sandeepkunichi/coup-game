@@ -94,6 +94,7 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         val challengeSuccessful: Boolean = initiatorHand match {
           case Some(iHand) =>
             !Seq(iHand.cards._1, iHand.cards._2).filterNot(_.shown).exists(_.equals(actionCard))
+          case _ => false
         }
 
         if (challengeSuccessful) {
@@ -150,6 +151,7 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         val challengeSuccessful: Boolean = initiatorHand match {
           case Some(iHand) =>
             !Seq(iHand.cards._1, iHand.cards._2).filterNot(_.shown).exists(c => counterActionCards.exists(_.equals(c)))
+          case _ => false
         }
 
         if (challengeSuccessful) {
@@ -166,7 +168,9 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
             Seq.empty
           }
         }
-
+      case Waiting() => Future {
+        Seq.empty
+      }
     }
   }
 
