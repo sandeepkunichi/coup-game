@@ -13,7 +13,8 @@ object EmailInvite {
     val from = new Email("sandeepkunichi@gmail.com")
     val subject = "Coup Game Invitation"
     val to = new Email(email)
-    val content = new Content("text/plain", "Go to this link to play: https://coup-fe.herokuapp.com/player?id=" + playerHash)
+    val htmlEmail = com.coupgame.email.html.email_invite.render(playerHash).toString
+    val content = new Content("text/html", htmlEmail)
     val mail = new Mail(from, subject, to, content)
 
     val sg = new SendGrid(apiKey)
