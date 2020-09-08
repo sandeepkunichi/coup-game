@@ -154,8 +154,6 @@
                 "reviewerId": playerId
             };
 
-            console.log(request);
-
             var settings = {
                 "url": "/feedback?gameId=1",
                 "method": "POST",
@@ -188,8 +186,6 @@
             if (target != null) {
                 request["target"] = target;
             }
-
-            console.log(request);
 
             var settings = {
                 "url": "/post-action?gameId=1",
@@ -228,7 +224,7 @@
                 };
                 webSocket.onclose = function (closeEvent) {
                     console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
-                    //setTimeout(openWSConnection(protocol, hostname, port, endpoint, gameId), 1000);
+                    setTimeout(openWSConnection(protocol, hostname, port, endpoint, gameId), 1000);
                 };
                 webSocket.onerror = function (errorEvent) {
                     console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
@@ -246,7 +242,6 @@
                         var modal = $('#action-modal');
                         var isBlockAction = log.indexOf("Block") >= 0;
                         var isBlockableAction = blockableActions.indexOf(actionId) >= 0;
-                        console.log(actionId);
                         if ((target === playerId || isBlockableAction) && !isBlockAction) {
                             $("#block-action").css("display", "block");
                         } else {
