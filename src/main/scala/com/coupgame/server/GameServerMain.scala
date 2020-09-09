@@ -91,7 +91,12 @@ trait CoupGameService {
           for {
             player <- playerStore.getPlayerByHash(playerId)
             world <- playerStore.getWorld
-          } yield com.coupgame.app.html.player_view.render(player, world, gameServerSocket)
+          } yield {
+            player match {
+              case Some(p) => com.coupgame.app.html.player_view.render(p, world, gameServerSocket)
+              case _ => com.coupgame.app.html.error.render("Error getting player view")
+            }
+          }
         }
       }
     }

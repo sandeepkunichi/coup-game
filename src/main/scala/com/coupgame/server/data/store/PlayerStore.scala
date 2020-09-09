@@ -11,7 +11,7 @@ import scala.util.Random
 
 trait PlayerStore {
   def getPlayer(playerId: Long): Future[Player]
-  def getPlayerByHash(playerHash: String): Future[Player]
+  def getPlayerByHash(playerHash: String): Future[Option[Player]]
   def createPlayers(emails: Set[String]): Future[Set[Player]]
   def dealToPlayers(): Future[Unit]
   def getWorld: Future[Set[Player]]
@@ -27,8 +27,8 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
     players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
   }
 
-  override def getPlayerByHash(playerHash: String): Future[Player] = Future {
-    players.values.find(p => p.playerHash.equals(UUID.fromString(playerHash))).getOrElse(throw new RuntimeException(s"$playerHash not found"))
+  override def getPlayerByHash(playerHash: String): Future[Option[Player]] = Future {
+    players.values.find(p => p.playerHash.equals(UUID.fromString(playerHash)))
   }
 
   override def createPlayers(emails: Set[String]): Future[Set[Player]] = {
