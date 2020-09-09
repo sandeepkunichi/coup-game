@@ -17,10 +17,15 @@ import play.twirl.api.Html
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.io.Source
 
 case class GameServerSocket(protocol: String, host: String, port: String)
 
 trait CoupGameService {
+
+  Seq("duke", "assassin", "captain", "contessa", "coup", "ambassador").foreach { img =>
+    Source.fromResource(s"$img.jpg")
+  }
 
   implicit val actorSystem: ActorSystem
   implicit val materializer: ActorMaterializer
@@ -148,6 +153,10 @@ trait CoupGameService {
     }
   }
 
+  val images: Route = path("images" / Segment) { name =>
+    getFromResource(s"$name.jpg")
+  }
+
 }
 
 class GameServer(gameServerSocketProd: GameServerSocket)
@@ -156,7 +165,7 @@ class GameServer(gameServerSocketProd: GameServerSocket)
   override protected val gameServerSocket: GameServerSocket = gameServerSocketProd
 
   def startServer(address: String, port: Int): Future[Http.ServerBinding] = {
-    Http().bindAndHandle(startGame ~ deal ~ world ~ playerView ~ gameRoom ~ postAction ~ feedback ~ index, address, port)
+    Http().bindAndHandle(startGame ~ deal ~ world ~ playerView ~ gameRoom ~ postAction ~ feedback ~ index ~ images, address, port)
   }
 }
 
