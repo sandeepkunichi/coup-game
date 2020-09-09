@@ -91,6 +91,9 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
         case ForeignAid =>
           players.update(initiator, initiatorPlayer.copy(coins = initiatorPlayer.coins + 2))
         case Coup =>
+          if (initiatorPlayer.coins < 7) {
+            throw new RuntimeException(s"Cannot coup. Player $initiator does not have enough coins")
+          }
           targetPlayer match {
             case Some(targetPlayerFound) =>
               val newHand: Option[Hand] = targetPlayerFound.hand.map(h => (h.cards._1.withShown, h.cards._2.withShown)).map(Hand)

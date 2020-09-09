@@ -246,12 +246,12 @@
                         var modal = $('#action-modal');
                         var isBlockAction = log.indexOf("Block") >= 0;
                         var isBlockableAction = blockableActions.indexOf(actionId) >= 0;
-                        if ((target === playerId || isBlockableAction) && !isBlockAction) {
+                        if ((target === playerId || isBlockableAction) && !isBlockAction && actionId !== 3) {
                             $("#block-action").css("display", "block");
                         } else {
                             $("#block-action").css("display", "none");
                         }
-                        if(actionId === 1 || actionId === 2 || isBlockAction) {
+                        if(actionId === 1 || actionId === 2 || actionId === 3 || isBlockAction) {
                             $("#challenge-action").css("display", "none");
                         } else {
                             $("#challenge-action").css("display", "block");
