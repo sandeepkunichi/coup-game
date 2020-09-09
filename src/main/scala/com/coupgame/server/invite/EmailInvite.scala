@@ -7,8 +7,7 @@ import scala.util.Try
 
 object EmailInvite {
 
-  def sendInvite(email: String, playerHash: String): Unit = {
-
+  def sendEmailInvite(email: String, playerHash: String): Unit = {
     val apiKey = sys.env.getOrElse("SENDGRID_API_KEY", "")
     val from = new Email("sandeepkunichi@gmail.com")
     val subject = "Coup Game Invitation"
@@ -26,7 +25,17 @@ object EmailInvite {
       request.setBody(mail.build)
       sg.api(request)
     }.getOrElse(throw new RuntimeException("Invite failed"))
+  }
 
+  def printInvite(playerHash: String): Unit = {
+    println(s"http://localhost:8080/player?id=$playerHash")
+  }
+
+  def sendInvite(email: String, playerHash: String): Unit = {
+    sys.env.get("ENV") match {
+      case Some(_) => sendEmailInvite(email, playerHash)
+      case _ => printInvite(playerHash)
+    }
   }
 
 }

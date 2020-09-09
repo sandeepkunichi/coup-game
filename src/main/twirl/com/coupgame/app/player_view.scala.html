@@ -10,9 +10,9 @@
         @if(player.hand.isDefined) {
             <div class="col-md-auto">
                 <div class="card" style="width: 18rem;">
+                    <img class="card-img-top" src="https://coup-fe.herokuapp.com/images/@(player.hand.get.cards._1.getClass.getSimpleName.toLowerCase)" alt="Card image cap" height="400" data-toggle="tooltip" data-placement="top" title="@(player.hand.get.cards._1.description)">
                     <div class="card-body">
                         <h5 class="card-title">@(player.hand.get.cards._1.getClass.getSimpleName)</h5>
-                        <p class="card-text">@(player.hand.get.cards._1.description)</p>
                         @(if(!player.hand.get.cards._1.shown) {
                                 <a class="btn text-white bg-success">Influence Active</a>
                         } else {
@@ -23,9 +23,9 @@
             </div>
             <div class="col-md-auto">
                 <div class="card" style="width: 18rem;">
+                    <img class="card-img-top" src="https://coup-fe.herokuapp.com/images/@(player.hand.get.cards._2.getClass.getSimpleName.toLowerCase)" alt="Card image cap" height="400" data-toggle="tooltip" data-placement="top" title="@(player.hand.get.cards._2.description)">
                     <div class="card-body">
                         <h5 class="card-title">@(player.hand.get.cards._2.getClass.getSimpleName)</h5>
-                        <p class="card-text">@(player.hand.get.cards._2.description)</p>
                         @(if(!player.hand.get.cards._2.shown) {
                                 <a class="btn text-white bg-success">Influence Active</a>
                         } else {
@@ -36,27 +36,31 @@
             </div>
         }
         <div class="col-md-auto">
-            <div class="card" style="width: 18rem;">
-                <div class="card-body">
-                    <h5 class="card-title">Coins</h5>
-                    <p class="card-text">@(player.coins)</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <br/>
-    <h1>Other Players' Hand</h1>
-    <div class="row">
-        @for(otherPlayer <- world.filterNot(p => p.playerId.equals(player.playerId))) {
-            <div class="col-md-auto">
-                <div class="card" style="width: 18rem;">
-                    <div class="card-body">
-                        <h5 class="card-title">@(otherPlayer.playerId.toString)</h5>
-                        <p class="card-text">@(otherPlayer.getHand)</p>
+            <div class="row">
+                <div class="col-md-auto">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">Coins</h5>
+                            <p class="card-text">@(player.coins)</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        }
+            <br/>
+            <h1>Other Players' Hand</h1>
+            <div class="row">
+            @for(otherPlayer <- world.filterNot(p => p.playerId.equals(player.playerId))) {
+                <div class="col-md-auto">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">@(otherPlayer.playerId.toString)</h5>
+                            <p class="card-text">@(otherPlayer.getHand)</p>
+                        </div>
+                    </div>
+                </div>
+            }
+            </div>
+        </div>
     </div>
     <br/>
     <h1>Actions</h1>
