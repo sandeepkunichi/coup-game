@@ -10,6 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 trait PlayerStore {
+  var currentPlayer: Option[Player]
   def getPlayer(playerId: Long): Future[Player]
   def getPlayerByHash(playerHash: String): Future[Option[Player]]
   def createPlayers(emails: Set[String]): Future[Set[Player]]
@@ -17,11 +18,14 @@ trait PlayerStore {
   def getWorld: Future[Set[Player]]
   def losePlayerInfluence(playerId: Long): Future[Player]
   def executeAction(action: Action, initiator: Long, target: Option[Long]): Future[Unit]
+  def getNextTurn: Future[Player]
 }
 
 class LocalPlayerStore(implicit executionContext: ExecutionContext) extends PlayerStore {
 
   private var players: mutable.Map[Long, Player] = mutable.Map.empty
+  private var turns: Iterator[Player] = Iterator.empty
+  override var currentPlayer: Option[Player] = None
 
   override def getPlayer(playerId: Long): Future[Player] = Future {
     players.getOrElse(playerId, throw new RuntimeException(s"$playerId not found"))
@@ -37,8 +41,10 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
       players = mutable.Map.empty
       playerIds.zip(emails).foreach {
         case (playerId: Long, email: String) =>
-          players += playerId -> Player(playerId, coins = 2, playerHash = UUID.randomUUID(), email = email)
+          val newPlayer = Player(playerId, coins = 2, playerHash = UUID.randomUUID(), email = email)
+          players += playerId -> newPlayer
       }
+      turns = Iterator.continually(players.values).flatten
       players.values.foreach { player =>
         EmailInvite.sendInvite(player.email, player.playerHash.toString)
       }
@@ -136,5 +142,9 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
           }
       }
     }
+  }
+
+  override def getNextTurn: Future[Player] = Future {
+    turns.take(1).toSeq.head
   }
 }

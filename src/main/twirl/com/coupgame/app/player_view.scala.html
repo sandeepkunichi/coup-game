@@ -1,6 +1,6 @@
 @import com.coupgame.server.data.models.ActionInterface
 @import com.coupgame.server.GameServerSocket
-@(player: com.coupgame.server.data.models.Player, world: Set[com.coupgame.server.data.models.Player], socket: GameServerSocket)
+@(player: com.coupgame.server.data.models.Player, world: Set[com.coupgame.server.data.models.Player], socket: GameServerSocket, currentPlayerTurn: com.coupgame.server.data.models.Player)
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
 <div class="container">
@@ -47,13 +47,24 @@
                 </div>
             </div>
             <br/>
-            <h1>Other Players' Hand</h1>
+            <div class="row">
+                <div class="col-md-auto">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">Current Turn</h5>
+                            <p class="card-text">Player @(currentPlayerTurn.playerId)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <h5>Other Players' Hand</h5>
             <div class="row">
             @for(otherPlayer <- world.filterNot(p => p.playerId.equals(player.playerId))) {
                 <div class="col-md-auto">
                     <div class="card" style="width: 18rem;">
                         <div class="card-body">
-                            <h5 class="card-title">@(otherPlayer.playerId.toString)</h5>
+                            <h5 class="card-title">Player @(otherPlayer.playerId.toString)'s Hand</h5>
                             <p class="card-text">@(otherPlayer.getHand)</p>
                         </div>
                     </div>
@@ -102,7 +113,11 @@
                         </select>
                     </div>
                     <br/>
-                    <button type="button" class="btn btn-primary" onclick="executeAction()">Execute</button>
+                    @if(player.playerId == currentPlayerTurn.playerId) {
+                        <button type="button" class="btn btn-primary" onclick="executeAction()">Execute</button>
+                    } else {
+                        <button type="button" class="btn btn-primary" onclick="executeAction()" disabled data-toggle="tooltip" data-placement="top" title="Not your turn">Execute</button>
+                    }
                 </div>
             </div>
         </div>

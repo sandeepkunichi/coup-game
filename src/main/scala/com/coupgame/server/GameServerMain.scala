@@ -43,9 +43,15 @@ trait CoupGameService {
     post {
       entity(as[StartGameCommand]) { sgc =>
         complete {
-          playerStore.createPlayers(sgc.emails).map { players =>
-            val gameId = gameRoomStore.createGameRoom()
-            StartGameResponse.apply(gameId, players)
+          (for {
+            players <- playerStore.createPlayers(sgc.emails)
+            currentPlayerToSet <- playerStore.getNextTurn
+          } yield (players, currentPlayerToSet))
+          .map {
+            case (players, currentPlayerToSet) =>
+              playerStore.currentPlayer = Some(currentPlayerToSet)
+              val gameId = gameRoomStore.createGameRoom()
+              StartGameResponse.apply(gameId, players)
           }
         }
       }
@@ -98,7 +104,7 @@ trait CoupGameService {
             world <- playerStore.getWorld
           } yield {
             player match {
-              case Some(p) => com.coupgame.app.html.player_view.render(p, world, gameServerSocket)
+              case Some(p) => com.coupgame.app.html.player_view.render(p, world, gameServerSocket, playerStore.currentPlayer.getOrElse(throw new Exception(s"Something went wrong")))
               case _ => com.coupgame.app.html.error.render("Error getting player view")
             }
           }

@@ -53,8 +53,14 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
     for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict(alternateLog.getOrElse(action.toJson)))
   }
 
-  def reloadAll(gameId: Long): Unit = {
-    for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict("RELOAD"))
+  def reloadAll(gameId: Long): Future[Unit] = {
+    (for {
+      currentPlayer <- playerStore.getNextTurn
+    } yield {
+      playerStore.currentPlayer = Some(currentPlayer)
+    }).map { _ =>
+      for (connection <- browserConnections(gameId).getConnections) connection(TextMessage.Strict("RELOAD"))
+    }
   }
 
   def createGameRoom(): Long = {
@@ -98,15 +104,17 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         }
 
         if (challengeSuccessful) {
-          playerStore.losePlayerInfluence(challengee).map { _ =>
-            reloadAll(1)
-            Seq.empty
+          playerStore.losePlayerInfluence(challengee).flatMap { _ =>
+            reloadAll(1).map { _ =>
+              Seq.empty[ActionCommand]
+            }
           }
         } else {
-          playerStore.losePlayerInfluence(challenger).map { _ =>
+          playerStore.losePlayerInfluence(challenger).flatMap { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
-            reloadAll(1)
-            Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
+            reloadAll(1).map { _ =>
+              Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
+            }
           }
         }
 
@@ -127,8 +135,7 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
 
         approvedActions.map(actionsMap.remove(_))
 
-        Future {
-          reloadAll(1)
+        reloadAll(1).map { _ =>
           approvedActions.toSeq
         }
 
@@ -155,17 +162,19 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
         }
 
         if (challengeSuccessful) {
-          playerStore.losePlayerInfluence(challengee).map { _ =>
+          playerStore.losePlayerInfluence(challengee).flatMap { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
             val originalAction = ActionCommand(initiator = feedbackCommand.reviewerId, target = Some(feedbackCommand.actionCommand.initiator), actionId = feedbackCommand.actionCommand.actionId)
-            reloadAll(1)
-            Seq(originalAction) ++ (if (originalAction.actionId == 2) Seq.empty else Seq(ActionCommand(challenger, None, 6)))
+            reloadAll(1).map { _ =>
+              Seq(originalAction) ++ (if (originalAction.actionId == 2) Seq.empty else Seq(ActionCommand(challenger, None, 6)))
+            }
           }
         } else {
-          playerStore.losePlayerInfluence(challenger).map { _ =>
+          playerStore.losePlayerInfluence(challenger).flatMap { _ =>
             actionsMap.remove(feedbackCommand.actionCommand)
-            reloadAll(1)
-            Seq.empty
+            reloadAll(1).map { _ =>
+              Seq.empty
+            }
           }
         }
       case Waiting() => Future {
