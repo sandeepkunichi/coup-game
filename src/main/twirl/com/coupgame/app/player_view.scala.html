@@ -66,6 +66,7 @@
                         <div class="card-body">
                             <h5 class="card-title">Player @(otherPlayer.playerId.toString)'s Hand</h5>
                             <p class="card-text">@(otherPlayer.getHand)</p>
+                            <p class="card-text">Coins: @(otherPlayer.coins)</p>
                         </div>
                     </div>
                 </div>
@@ -149,7 +150,8 @@
                 <div id="action-data"></div>
                 <button id="challenge-action" type="button" class="btn btn-primary" data-dismiss="modal" onclick="feedback(3)">Challenge</button>
                 <button id="challenge-block" type="button" class="btn btn-primary" data-dismiss="modal" onclick="feedback(4)">Challenge Block</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="feedback(1)">Accept</button>
+                <button id="accept-action" type="button" class="btn btn-secondary" data-dismiss="modal" onclick="feedback(1)">Accept</button>
+                <button id="accept-block-action" type="button" class="btn btn-secondary" data-dismiss="modal" onclick="feedback(5)">Accept Block</button>
                 <button id="block-action" type="button" class="btn btn-secondary" data-dismiss="modal" style="display: none" onclick="feedback(2)">Block</button>
             </div>
         </div>
@@ -273,8 +275,12 @@
                         }
                         if (isBlockAction) {
                             $("#challenge-block").css("display", "block");
+                            $("#accept-block-action").css("display", "block");
+                            $("#accept-action").css("display", "none");
                         } else {
                             $("#challenge-block").css("display", "none");
+                            $("#accept-block-action").css("display", "none");
+                            $("#accept-action").css("display", "block");
                         }
                         $("#action-log").text(wsMsg["log"]);
                         $("#action-data").data(wsMsg);

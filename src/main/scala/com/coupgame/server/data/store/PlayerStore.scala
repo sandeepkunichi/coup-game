@@ -19,6 +19,7 @@ trait PlayerStore {
   def losePlayerInfluence(playerId: Long): Future[Player]
   def executeAction(action: Action, initiator: Long, target: Option[Long]): Future[Unit]
   def getNextTurn: Future[Player]
+  def deductCoins(playerId: Long, numCoins: Int): Future[Unit]
 }
 
 class LocalPlayerStore(implicit executionContext: ExecutionContext) extends PlayerStore {
@@ -146,5 +147,14 @@ class LocalPlayerStore(implicit executionContext: ExecutionContext) extends Play
 
   override def getNextTurn: Future[Player] = Future {
     turns.take(1).toSeq.head
+  }
+
+  override def deductCoins(playerId: Long, numCoins: Int): Future[Unit] = {
+    getPlayer(playerId).map { player =>
+      if (player.coins < numCoins) {
+        throw new RuntimeException(s"Cannot deduct. Player $player does not have enough coins")
+      }
+      players.update(player.playerId, player.copy(coins = player.coins - numCoins))
+    }
   }
 }

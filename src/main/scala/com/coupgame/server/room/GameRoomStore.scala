@@ -18,6 +18,7 @@ case class Approve(actionCommand: ActionCommand, reviewerId: Long) extends Actio
 case class Block(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
 case class Challenge(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
 case class ChallengeBlock(actionCommand: ActionCommand) extends ActionReview
+case class ApproveBlock(actionCommand: ActionCommand, reviewerId: Long) extends ActionReview
 
 case class ActionLog(actionCommand: ActionCommand, reviews: Seq[ActionReview] = Seq.empty)
 
@@ -89,6 +90,7 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
       case 2 => Block(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
       case 3 => Challenge(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
       case 4 => ChallengeBlock(feedbackCommand.actionCommand)
+      case 5 => ApproveBlock(feedbackCommand.actionCommand, feedbackCommand.reviewerId)
     }
 
     actionReview match {
@@ -114,6 +116,29 @@ class GameRoomStore(playerStore: PlayerStore)(implicit ec: ExecutionContext) {
             actionsMap.remove(feedbackCommand.actionCommand)
             reloadAll(1).map { _ =>
               Seq(feedbackCommand.actionCommand, ActionCommand(challengee, None, 6))
+            }
+          }
+        }
+
+      case ApproveBlock(_, _) =>
+        val target: Option[Long] = feedbackCommand.actionCommand.actionId match {
+          case 5 | 7 => Some(feedbackCommand.actionCommand.initiator)
+          case _ => None
+        }
+        val originalAction = ActionCommand(feedbackCommand.reviewerId, target, feedbackCommand.actionCommand.actionId)
+        actionsMap.remove(originalAction)
+
+
+        reloadAll(1).flatMap { _ =>
+          // If the original initiator (now reviewer of the block action)
+          // accepts a block on assassination, deduct coins for assassination
+          if (feedbackCommand.actionCommand.actionId == 5) {
+            playerStore.deductCoins(feedbackCommand.reviewerId, 3).map { _ =>
+              Seq.empty[ActionCommand]
+            }
+          } else {
+            Future {
+              Seq.empty[ActionCommand]
             }
           }
         }
