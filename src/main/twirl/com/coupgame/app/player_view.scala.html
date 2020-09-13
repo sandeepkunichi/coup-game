@@ -62,7 +62,7 @@
             <div class="row">
             @for(otherPlayer <- world.filterNot(p => p.playerId.equals(player.playerId))) {
                 <div class="col-md-auto">
-                    <div class="card" style="width: 18rem;">
+                    <div class="card" style="width: 12rem;">
                         <div class="card-body">
                             <h5 class="card-title">Player @(otherPlayer.playerId.toString)'s Hand</h5>
                             <p class="card-text">@(otherPlayer.getHand)</p>
@@ -78,25 +78,10 @@
     <h1>Actions</h1>
     <div class="row">
         <div class="col-md-auto">
-            <table class="table table-sm table-dark">
-                <thead>
-                    <tr>
-                        <th scope="col">Action</th>
-                        <th scope="col">Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @for(action <- ActionInterface().actionIdMap) {
-                    <tr>
-                        <td>@action._2.getClass.getSimpleName.replace("$", "")</td>
-                        <td>@action._2.log</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-        <div class="col-md-auto">
-            <div class="card" style="width: 18rem;">
+            <div class="card" style="width: 36rem;">
+                <div class="card-header">
+                    <img class="card-img-top" src="https://res.cloudinary.com/lmn/image/upload/e_sharpen:100/f_auto,fl_lossy,q_auto/v1/gameskinnyc/p/h/o/photo-coup-1024x658-7b519.png" alt="Card image cap">
+                </div>
                 <div class="card-body">
                     <h5 class="card-title">Execute Action</h5>
                     <select id="execute-action" class="form-control" title="execute-action" onchange="showPlayers()">
